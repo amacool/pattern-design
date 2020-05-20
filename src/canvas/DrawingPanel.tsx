@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { DrawingObject, selectObjects, getSelectedObject, getLineWidth } from './DrawingApi';
 import { SettingModal } from '../components/SettingModal';
 
@@ -10,8 +10,6 @@ const points = [
 ];
 
 function DrawingPanel() {
-  let canvasPanel = {} as HTMLCanvasElement;
-  // let drawingObjects = [] as DrawingObject[];
   let chartRect = {
     width: 800,
     height: 800
@@ -28,40 +26,9 @@ function DrawingPanel() {
   });
   let drawingObjects = useRef<DrawingObject[]>([]);
   let cx = useRef<CanvasRenderingContext2D>();
-  
-  useEffect(() => {
-    const newObjParams = {
-      type: 10,
-      color: '#fff',
-      selected: true,
-      vertexLen: points.length,
-      lineColor: '',
-      lineWidth: 5,
-      lineStyle: 0,
-      vertices: points
-    };
-    const newObj = new DrawingObject(newObjParams);
-    drawingObjects.current.push(newObj);
+  let canvasPanel = useRef<HTMLCanvasElement>();
 
-    initCanvasPanel();
-    
-    canvasPanel = document.querySelector('#custom-canvas') as HTMLCanvasElement;
-    canvasPanel.addEventListener('click', handleClickOnPanel);
-    // canvasPanel.addEventListener('mousedown', handleMouseDownOnPanel);
-    // canvasPanel.addEventListener('mousemove', handleMouseMoveOnPanel);
-    // canvasPanel.addEventListener('mouseup', handleMouseUpOnPanel);
-    // canvasPanel.addEventListener('dblclick', handleMouseDblClickOnPanel);
-
-    return () => {
-      canvasPanel.removeEventListener('click', handleClickOnPanel);
-      // canvasPanel.removeEventListener('mousedown', handleMouseDownOnPanel);
-      // canvasPanel.removeEventListener('mousemove', handleMouseMoveOnPanel);
-      // canvasPanel.removeEventListener('mouseup', handleMouseUpOnPanel);
-      // canvasPanel.removeEventListener('dblclick', handleMouseDblClickOnPanel);
-    }
-  }, []);
-
-  const setupCanvas = () => {
+  const setupCanvas = useCallback(() => {
     const can = document.querySelector('#custom-canvas') as HTMLCanvasElement;
     const dpr = window.devicePixelRatio || 1;
     const rect = can.getBoundingClientRect();
@@ -71,25 +38,19 @@ function DrawingPanel() {
     const ctx = can.getContext('2d') as CanvasRenderingContext2D;
     ctx.scale(dpr, dpr);
     cx.current = ctx;
-  };
+  }, []);
 
-  const updateCanvas = () => {
+  const updateCanvas = useCallback(() => {
     (cx as any).current.clearRect(0, 0, chartRect.width, chartRect.height);
     drawingObjects.current.forEach(drawing => drawing.drawObject(cx.current, chartRect));
-  };
+  }, [chartRect]);
 
-  // const releaseCanvas = () => {
-  //   setOpenSettingModal(false);
-  //   selectObjects(false, true, drawObjects);
-  //   updateCanvas();
-  // };
-
-  const initCanvasPanel = () => {
+  const initCanvasPanel = useCallback(() => {
     setupCanvas();
     updateCanvas();
-  };
+  }, [updateCanvas, setupCanvas]);
 
-  const handleClickOnPanel = (e: any) => {
+  const handleClickOnPanel = useCallback((e: any) => {
     const { layerX, layerY } = e;
 
     selectObjects(false, true, drawingObjects.current);
@@ -122,15 +83,13 @@ function DrawingPanel() {
         const X = vertice[selectedSegment];
         const Y = vertice[selectedSegment >= vertice.length - 1 ? 0 : selectedSegment + 1];
         const width = getLineWidth(X, Y);
-        console.log(width)
         setParams({ ...params, width });
         setOpenSettingModal(true);
       }
     } else {
       setOpenSettingModal(false);
-      // releaseCanvas();
     }
-  }
+  }, [chartRect, params, selected, updateCanvas]);
 
   const applySetting = (value: number) => {
     const { curSelectedSegment, curSelectedObject } = selected;
@@ -157,6 +116,30 @@ function DrawingPanel() {
     apply && applySetting(parseInt(value));
     setOpenSettingModal(false);
   }
+
+  useEffect(() => {
+    const newObjParams = {
+      type: 10,
+      color: '#fff',
+      selected: true,
+      vertexLen: points.length,
+      lineColor: '#000',
+      lineWidth: 5,
+      lineStyle: 0,
+      vertices: points
+    };
+    const newObj = new DrawingObject(newObjParams);
+    drawingObjects.current.push(newObj);
+
+    initCanvasPanel();
+    
+    canvasPanel.current = document.querySelector('#custom-canvas') as HTMLCanvasElement;
+    canvasPanel.current.addEventListener('click', handleClickOnPanel);
+
+    return () => {
+      (canvasPanel.current as any).removeEventListener('click', handleClickOnPanel);
+    }
+  }, [handleClickOnPanel, initCanvasPanel]);
 
   return (
     <div>

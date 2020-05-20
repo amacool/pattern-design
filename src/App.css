@@ -29,6 +29,7 @@
 #custom-canvas {
   margin-top: 100px;
   border: solid 2px #29ff17;
+  background-color: #b5b5b5;
 }
 
 @keyframes App-logo-spin {

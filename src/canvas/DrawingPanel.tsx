@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { DrawingObject, selectObjects, getSelectedObject } from './DrawingApi';
+import { DrawingObject, selectObjects, getSelectedObject, getLineWidth } from './DrawingApi';
 import { SettingModal } from '../components/SettingModal';
 
 const points = [
@@ -10,14 +10,12 @@ const points = [
 ];
 
 function DrawingPanel() {
-  let cx = {} as CanvasRenderingContext2D;
   let canvasPanel = {} as HTMLCanvasElement;
   // let drawingObjects = [] as DrawingObject[];
   let chartRect = {
-    width: 500,
-    height: 500
+    width: 800,
+    height: 800
   };
-  let settingValues = {};
 
   const [openSettingModal, setOpenSettingModal] = useState(false);
   const [selected, setSelected] = useState({
@@ -25,7 +23,11 @@ function DrawingPanel() {
     curSelectedObject: -1,
     curSelectedVertex: -1
   });
-  const drawingObjects = useRef<DrawingObject[]>([]);
+  const [params, setParams] = useState({
+    width: 100
+  });
+  let drawingObjects = useRef<DrawingObject[]>([]);
+  let cx = useRef<CanvasRenderingContext2D>();
   
   useEffect(() => {
     const newObjParams = {
@@ -34,7 +36,7 @@ function DrawingPanel() {
       selected: true,
       vertexLen: points.length,
       lineColor: '',
-      lineWidth: 4,
+      lineWidth: 5,
       lineStyle: 0,
       vertices: points
     };
@@ -68,12 +70,12 @@ function DrawingPanel() {
 
     const ctx = can.getContext('2d') as CanvasRenderingContext2D;
     ctx.scale(dpr, dpr);
-    cx = ctx;
+    cx.current = ctx;
   };
 
   const updateCanvas = () => {
-    cx.clearRect(0, 0, chartRect.width, chartRect.height);
-    drawingObjects.current.forEach(drawing => drawing.drawObject(cx, chartRect));
+    (cx as any).current.clearRect(0, 0, chartRect.width, chartRect.height);
+    drawingObjects.current.forEach(drawing => drawing.drawObject(cx.current, chartRect));
   };
 
   // const releaseCanvas = () => {
@@ -95,7 +97,7 @@ function DrawingPanel() {
       layerX,
       layerY,
       drawingObjects.current,
-      cx,
+      cx.current,
       chartRect,
     );
     
@@ -116,6 +118,12 @@ function DrawingPanel() {
           curSelectedObject: selectedObject,
           curSelectedSegment: selectedSegment
         });
+        const vertice = [...drawingObjects.current[selectedObject].vertices];
+        const X = vertice[selectedSegment];
+        const Y = vertice[selectedSegment >= vertice.length - 1 ? 0 : selectedSegment + 1];
+        const width = getLineWidth(X, Y);
+        console.log(width)
+        setParams({ ...params, width });
         setOpenSettingModal(true);
       }
     } else {
@@ -132,27 +140,30 @@ function DrawingPanel() {
     let Y = vertice[curSelectedSegment >= vertice.length - 1 ? 0 : curSelectedSegment + 1];
 
     if (X.posX === Y.posX) {
-      Y.posY += value;
+      const flag = X.posY < Y.posY ? 1 : -1;
+      Y.posY = X.posY + flag * value;
     } else if (X.posY === Y.posY) {
       const flag = X.posX < Y.posX ? 1 : -1;
-      Y.posX += flag * value;
+      Y.posX = X.posX + flag * value;
     }
     vertice[curSelectedSegment] = X;
     vertice[curSelectedSegment >= vertice.length - 1 ? 0 : curSelectedSegment + 1] = Y;
     drawingObjects.current[curSelectedObject].vertices = [...vertice];
+
+    updateCanvas();
   };
 
   const setSettingValues = (apply: boolean, value: string) => {
     apply && applySetting(parseInt(value));
+    setOpenSettingModal(false);
   }
 
   return (
     <div>
-      <h3>Here canvas starts: {openSettingModal && "segment selected"}</h3>
-      <canvas id="custom-canvas" style={{ width: 500, height: 500 }}></canvas>
+      <canvas id="custom-canvas" style={chartRect}></canvas>
       {openSettingModal && (
         <SettingModal
-          settingValues={settingValues}
+          settingValues={params}
           setSettingValues={setSettingValues}
         />
       )}

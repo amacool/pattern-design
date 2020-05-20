@@ -4,12 +4,18 @@ import $ from 'jquery';
 import './index.css';
 
 interface SettingModalProps {
-  settingValues: object;
+  settingValues: {
+    width: number
+  };
   setSettingValues: (apply: boolean, value: string) => void;
 }
 
 const SettingModal = ({ settingValues, setSettingValues }: SettingModalProps) => {
   const [value, setValue] = useState('');
+
+  useEffect(() => {
+    setValue(settingValues.width.toString());
+  }, [settingValues]);
 
   useEffect(() => {
     $('.setting-modal-header').on('mousedown', function (e: any) {
@@ -36,7 +42,7 @@ const SettingModal = ({ settingValues, setSettingValues }: SettingModalProps) =>
   return (
     <div className="setting-modal">
       <div className="setting-modal-header">
-        <h3>Setting</h3>
+        <h5>Setting</h5>
         <div className="icon-close" onClick={() => setSettingValues(false, value)} />
       </div>
       <div className="setting-modal-body">

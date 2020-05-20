@@ -3,10 +3,10 @@
   z-index: 10;
   border: 1px solid #ccc;
   background: white;
-  width: 50% !important;
-  height: 400px !important;
-  top: 10%;
-  left: 25%;
+  width: 30% !important;
+  height: 30% !important;
+  top: 30%;
+  left: 35%;
   color: black;
 }
 
@@ -25,9 +25,9 @@
   cursor: pointer;
   background: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAkAAAASCAYAAACJgPRIAAAAUElEQVR42pWQMQoAIAwD++d+x8HJbyoOWXJDSSBgwpVS62vtc8ulXg/ZAZkFMycNoBJgXoUcX1cm9N1NSL0esgMyC2ZOGkAlwLwKObhu/qcHp/zWImEdH8EAAAAASUVORK5CYII=') no-repeat;
 }
-  
+
 .setting-modal-body {
-  height: 75%;
+  height: 54%;
   padding: 10px;
 }
   
@@ -37,6 +37,7 @@
   display: flex;
   justify-content: flex-end;
   align-items: center;
+  padding: 7px;
 }
 
 .setting-modal-footer button {

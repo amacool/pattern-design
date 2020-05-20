@@ -312,6 +312,8 @@ export class DrawingObject {
     // make the object closed
     cx.closePath();
     cx.stroke();
+    cx.fillStyle = '#E5EEFF';
+    cx.fill();
 
     // drawing ellipse around vertices
     if (this.selected) {
@@ -751,3 +753,9 @@ export const getSelectedObject = (posX: number, posY: number, objects: any, cx: 
   }
   return { selectedObject, selectedVertex, selectedSegment };
 };
+
+export const getLineWidth = (X: Vertex, Y: Vertex) => {
+  const deltaX = X.posX - Y.posX;
+  const deltaY = X.posY - Y.posY;
+  return Math.sqrt(deltaX*deltaX + deltaY*deltaY);
+}

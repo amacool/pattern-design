@@ -46,7 +46,7 @@ const SettingModal = ({ settingValues, setSettingValues }: SettingModalProps) =>
         <div className="icon-close" onClick={() => setSettingValues(false, value)} />
       </div>
       <div className="setting-modal-body">
-        <input value={value} onChange={e => setValue(e.target.value)} />
+        <input value={value ? Math.ceil(parseFloat(value)) : 0} onChange={e => setValue(e.target.value)} />
       </div>
       <div className="setting-modal-footer">
         <button className="btn-setting btn btn-primary" onClick={() => setSettingValues(true, value)}>

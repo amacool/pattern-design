@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
-import { DrawingObject, selectObjects, getSelectedObject, drawObjects } from './DrawingApi';
+import React, { useEffect, useState, useRef } from 'react';
+import { DrawingObject, selectObjects, getSelectedObject } from './DrawingApi';
+import { SettingModal } from '../components/SettingModal';
 
 const points = [
   { posX: 100, posY: 100, selected: false },
@@ -11,14 +12,20 @@ const points = [
 function DrawingPanel() {
   let cx = {} as CanvasRenderingContext2D;
   let canvasPanel = {} as HTMLCanvasElement;
-  let drawingObjects = [] as DrawingObject[];
-  let curSelectedSegment = -1;
+  // let drawingObjects = [] as DrawingObject[];
   let chartRect = {
     width: 500,
     height: 500
   };
+  let settingValues = {};
 
   const [openSettingModal, setOpenSettingModal] = useState(false);
+  const [selected, setSelected] = useState({
+    curSelectedSegment: -1,
+    curSelectedObject: -1,
+    curSelectedVertex: -1
+  });
+  const drawingObjects = useRef<DrawingObject[]>([]);
   
   useEffect(() => {
     const newObjParams = {
@@ -32,7 +39,7 @@ function DrawingPanel() {
       vertices: points
     };
     const newObj = new DrawingObject(newObjParams);
-    drawingObjects.push(newObj);
+    drawingObjects.current.push(newObj);
 
     initCanvasPanel();
     
@@ -66,14 +73,14 @@ function DrawingPanel() {
 
   const updateCanvas = () => {
     cx.clearRect(0, 0, chartRect.width, chartRect.height);
-    drawingObjects.forEach(drawing => drawing.drawObject(cx, chartRect));
+    drawingObjects.current.forEach(drawing => drawing.drawObject(cx, chartRect));
   };
 
-  const releaseCanvas = () => {
-    setOpenSettingModal(false);
-    selectObjects(false, true, drawObjects);
-    updateCanvas();
-  };
+  // const releaseCanvas = () => {
+  //   setOpenSettingModal(false);
+  //   selectObjects(false, true, drawObjects);
+  //   updateCanvas();
+  // };
 
   const initCanvasPanel = () => {
     setupCanvas();
@@ -82,55 +89,73 @@ function DrawingPanel() {
 
   const handleClickOnPanel = (e: any) => {
     const { layerX, layerY } = e;
-    let curSelectedVertex = -1;
-    let curSelectedObject = -1;
 
-    selectObjects(false, true, drawingObjects);
+    selectObjects(false, true, drawingObjects.current);
     const { selectedObject, selectedVertex, selectedSegment } = getSelectedObject(
       layerX,
       layerY,
-      drawingObjects,
+      drawingObjects.current,
       cx,
       chartRect,
     );
-    curSelectedSegment = selectedSegment;
-    console.log(selectedObject, selectedSegment);
-
+    
     if (selectedObject >= 0) {
-      curSelectedObject = selectedObject;
-      drawingObjects[curSelectedObject].selectMyself(true, false);
+      setSelected({ ...selected, curSelectedObject: selectedObject })
+      drawingObjects.current[selectedObject].selectMyself(true, false);
       if (selectedVertex >= 0) {
-        curSelectedVertex = selectedVertex;
-        drawingObjects[curSelectedObject].selectVertex(true, selectedVertex);
+        setSelected({
+          ...selected,
+          curSelectedObject: selectedObject,
+          curSelectedVertex: selectedVertex
+        });
+        drawingObjects.current[selectedObject].selectVertex(true, selectedVertex);
+        updateCanvas();
       } else if (selectedSegment >= 0) {
+        setSelected({
+          ...selected,
+          curSelectedObject: selectedObject,
+          curSelectedSegment: selectedSegment
+        });
         setOpenSettingModal(true);
-        let vertice = [...drawingObjects[curSelectedObject].vertices];
-        let X = vertice[selectedSegment];
-        let Y = vertice[selectedSegment >= vertice.length - 1 ? 0 : selectedSegment + 1];
-        console.log(X, Y);
-        if (X.posX === Y.posX) {
-          Y.posY += 50;
-        } else if (X.posY === Y.posY) {
-          const flag = X.posX < Y.posX ? 1 : -1;
-          Y.posX += flag * 50;
-        }
-        vertice[selectedSegment] = X;
-        vertice[selectedSegment >= vertice.length - 1 ? 0 : selectedSegment + 1] = Y;
-        drawingObjects[curSelectedObject].vertices = [...vertice];
       }
-      
-      updateCanvas();
-      return;
     } else {
       setOpenSettingModal(false);
       // releaseCanvas();
     }
   }
 
+  const applySetting = (value: number) => {
+    const { curSelectedSegment, curSelectedObject } = selected;
+
+    let vertice = [...drawingObjects.current[curSelectedObject].vertices];
+    let X = vertice[curSelectedSegment];
+    let Y = vertice[curSelectedSegment >= vertice.length - 1 ? 0 : curSelectedSegment + 1];
+
+    if (X.posX === Y.posX) {
+      Y.posY += value;
+    } else if (X.posY === Y.posY) {
+      const flag = X.posX < Y.posX ? 1 : -1;
+      Y.posX += flag * value;
+    }
+    vertice[curSelectedSegment] = X;
+    vertice[curSelectedSegment >= vertice.length - 1 ? 0 : curSelectedSegment + 1] = Y;
+    drawingObjects.current[curSelectedObject].vertices = [...vertice];
+  };
+
+  const setSettingValues = (apply: boolean, value: string) => {
+    apply && applySetting(parseInt(value));
+  }
+
   return (
     <div>
       <h3>Here canvas starts: {openSettingModal && "segment selected"}</h3>
       <canvas id="custom-canvas" style={{ width: 500, height: 500 }}></canvas>
+      {openSettingModal && (
+        <SettingModal
+          settingValues={settingValues}
+          setSettingValues={setSettingValues}
+        />
+      )}
     </div>
   )
 }

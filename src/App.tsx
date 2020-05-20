@@ -1,6 +1,6 @@
 import React from 'react';
-import './App.css';
 import DrawingPanel from './canvas/DrawingPanel';
+import './App.css';
 
 function App() {
   return (
